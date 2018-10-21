@@ -22,4 +22,8 @@ Route::group(['prefix' => 'webapi'], function() {
 });
 
 Route::get('/home', 'HomeController@index')->name('home');
-Route::get('/conversations', 'ConversationController@index')->name('conversations');
+Route::post('/get-friends', 'HomeController@getFriends')->name('get-friends');
+Route::post('/session/create', 'SessionController@store')->name('session-create');
+Route::post('/send/{session}', 'ChatController@send')->name('send-message');
+Route::post('/session/{session}/chats', 'ChatController@chats')->name('chats');
+Route::post('/session/{session}/read', 'ChatController@read')->name('session-read');

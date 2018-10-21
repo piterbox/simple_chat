@@ -27,23 +27,4 @@ class User extends Authenticatable
         'password', 'remember_token',
     ];
 
-    public function conversations()
-    {
-        return $this->belongsToMany(Conversation::class)->whereNull('parent_id')->orderBy('last_reply', 'desc');
-    }
-
-    public function isInConversation(Conversation $conversation)
-    {
-        return $this->conversations->contains($conversation);
-    }
-
-    public function avatar($size = 45)
-    {
-        return 'http://www.gravatar.com/avatar/x?s=' . $size . '&d=mm';
-    }
-
-    public function getAvatarAttribute()
-    {
-        return 'http://www.gravatar.com/avatar/x?s=45&d=mm';
-    }
 }
