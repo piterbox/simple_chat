@@ -27,3 +27,6 @@ Route::post('/session/create', 'SessionController@store')->name('session-create'
 Route::post('/send/{session}', 'ChatController@send')->name('send-message');
 Route::post('/session/{session}/chats', 'ChatController@chats')->name('chats');
 Route::post('/session/{session}/read', 'ChatController@read')->name('session-read');
+Route::post('/session/{session}/clear', 'ChatController@clear')->name('session-clear');
+Route::post('/session/{session}/block', 'BlockController@block')->name('session-block');
+Route::post('/session/{session}/unblock', 'BlockController@unblock')->name('session-unblock');

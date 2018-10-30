@@ -15,7 +15,7 @@ class SessionController extends Controller
     {
         $user = User::find($request->get('user_id'));
         if(!$user) return response()->json(['status' => 'error', 'message' => 'User not found']);
-        $session = Session::create(['user1_id' => $user->id, 'user2_id' => auth()->user()->id, 'created_at' => Carbon::now()]);
+        $session = Session::create(['user1_id' => $user->id, 'user2_id' => auth()->user()->id, 'block' => 0, 'blocked_by' => null, 'created_at' => Carbon::now()]);
         $modifiedSession = new SessionResource($session);
         broadcast(new SessionEvent($session, auth()->id()));
         return $modifiedSession;

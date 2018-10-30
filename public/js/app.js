@@ -58600,7 +58600,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         this.getFriends();
         Echo.channel('Chat').listen('SessionEvent', function (e) {
             var friend = _this.friends.find(function (friend) {
-                return friend.id == e.session_by.id;
+                return friend.id == e.session_by;
             });
             friend.session = e.session;
             _this.listenEverySession(friend);
@@ -58749,7 +58749,7 @@ exports = module.exports = __webpack_require__(13)(false);
 
 
 // module
-exports.push([module.i, "\n.chat-box{\n    height: 500px;\n}\n.card-body{\n    overflow-y: scroll;\n}\na{\n    color: #000;\n    margin: 5px 10px;\n    font-size: 14px;\n}\na{\n    color: #000;\n}\n.fa-times{\n    color: red;\n}\n", ""]);
+exports.push([module.i, "\n.chat-box{\n    height: 500px;\n}\n.card-body{\n    overflow-y: scroll;\n}\na{\n    color: #000;\n    margin: 5px 10px;\n    font-size: 14px;\n}\na{\n    color: #000;\n}\n.fa-times{\n    color: red;\n}\n.message-back{\n    padding: 10px;\n    border-color: #ccc;\n    border-radius: 5px;\n}\n.list-group-item{\n    border: none;\n}\n\n", ""]);
 
 // exports
 
@@ -58795,6 +58795,10 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
+//
+//
 
 /* harmony default export */ __webpack_exports__["default"] = ({
     props: ['friend'],
@@ -58802,36 +58806,72 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         return {
             messages: [],
             message: null,
-            block: false
+            isTyping: false
         };
+    },
+    computed: {
+        session: function session() {
+            return this.friend.session;
+        },
+        can: function can() {
+            return this.session.blocked_by == auth.id;
+        }
+    },
+    watch: {
+        message: function message(value) {
+            if (value) {
+                Echo.private('Chat.' + this.friend.session.id).whisper('typing', {
+                    name: auth.name
+                });
+            }
+        }
     },
     methods: {
         send: function send() {
-            this.messages.push({ text: this.message, type: 0, send_at: 'Just now' });
+            var _this = this;
 
+            this.messages.push({ text: this.message, type: 0, read_at: null, send_at: 'Just now' });
             axios.post('/send/' + this.friend.session.id, {
                 content: this.message,
                 to_user: this.friend.id
+            }).then(function (res) {
+                return _this.messages[_this.messages.length - 1].id = res.data;
             });
+
             this.message = null;
         },
         close: function close() {
             this.$emit('close');
         },
         clear: function clear() {
+            var _this2 = this;
+
             this.messages = [];
+            axios.post('/session/' + this.friend.session.id + '/clear').then(function (res) {
+                return _this2.messages = [];
+            });
         },
         block_user: function block_user() {
-            this.block = true;
+            var _this3 = this;
+
+            axios.post('/session/' + this.friend.session.id + '/block').then(function (res) {
+                _this3.session.block = true;
+                _this3.session.blocked_by = auth.id;
+            });
         },
         unblock_user: function unblock_user() {
-            this.block = false;
+            var _this4 = this;
+
+            axios.post('/session/' + this.friend.session.id + '/unblock').then(function (res) {
+                _this4.session.block = false;
+                _this4.session.blocked = null;
+            });
         },
         getAllMessages: function getAllMessages() {
-            var _this = this;
+            var _this5 = this;
 
             axios.post('/session/' + this.friend.session.id + '/chats').then(function (res) {
-                _this.messages = res.data.data;
+                _this5.messages = res.data.data;
             });
         },
         read: function read() {
@@ -58839,13 +58879,30 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         }
     },
     created: function created() {
-        var _this2 = this;
+        var _this6 = this;
 
         this.read();
         this.getAllMessages();
         Echo.private('Chat.' + this.friend.session.id).listen('PrivateChatEvent', function (e) {
-            _this2.read();
-            _this2.messages.push({ text: e.content, type: 1, send_at: 'Just now' });
+            _this6.friend.session.open ? _this6.read() : '';
+            _this6.messages.push({ text: e.content, type: 1, send_at: 'Just now' });
+        });
+
+        Echo.private('Chat.' + this.friend.session.id).listen('MessageReadEvent', function (e) {
+            _this6.messages.forEach(function (message) {
+                return message.id == e.chat.id ? message.read_at = e.chat.read_at : '';
+            });
+        });
+
+        Echo.private('Chat.' + this.friend.session.id).listen('SessionBlockEvent', function (e) {
+            _this6.session.block = e.blocked;
+        });
+
+        Echo.private('Chat.' + this.friend.session.id).listenForWhisper('typing', function (e) {
+            _this6.isTyping = true;
+            setTimeout(function () {
+                _this6.isTyping = false;
+            }, 2000);
         });
     }
 });
@@ -58860,11 +58917,13 @@ var render = function() {
   var _c = _vm._self._c || _h
   return _c("div", { staticClass: "card card-default chat-box" }, [
     _c("div", { staticClass: "card-header" }, [
-      _c("b", { class: { "text-danger": _vm.block } }, [
+      _c("b", { class: { "text-danger": _vm.session.block } }, [
         _vm._v(_vm._s(_vm.friend.name))
       ]),
       _vm._v(" "),
-      _vm.block ? _c("span", [_vm._v("(blocked)")]) : _vm._e(),
+      _vm.isTyping ? _c("span", [_vm._v("is typing ...")]) : _vm._e(),
+      _vm._v(" "),
+      _vm.session.block ? _c("span", [_vm._v("(blocked)")]) : _vm._e(),
       _vm._v(" "),
       _c(
         "a",
@@ -58891,7 +58950,7 @@ var render = function() {
             attrs: { "aria-labelledby": "dropdownMenuLink" }
           },
           [
-            !_vm.block
+            !_vm.session.block
               ? _c(
                   "a",
                   {
@@ -58901,7 +58960,10 @@ var render = function() {
                   },
                   [_vm._v("Block")]
                 )
-              : _c(
+              : _vm._e(),
+            _vm._v(" "),
+            _vm.session.block && _vm.can
+              ? _c(
                   "a",
                   {
                     staticClass: "dropdown-item",
@@ -58909,7 +58971,8 @@ var render = function() {
                     on: { click: _vm.unblock_user }
                   },
                   [_vm._v("UnBlock")]
-                ),
+                )
+              : _vm._e(),
             _vm._v(" "),
             _c(
               "a",
@@ -58943,7 +59006,25 @@ var render = function() {
                 staticClass: "list-group-item",
                 class: { "text-right": message.type == 0 }
               },
-              [_vm._v(_vm._s(message.text))]
+              [
+                _c(
+                  "span",
+                  {
+                    staticClass: "message-back",
+                    class: {
+                      "alert-success": message.read_at != null,
+                      "alert-secondary": message.read_at == null
+                    }
+                  },
+                  [
+                    _vm._v(
+                      "\n                    " +
+                        _vm._s(message.text) +
+                        "\n                    "
+                    )
+                  ]
+                )
+              ]
             )
           })
         )
@@ -58976,7 +59057,7 @@ var render = function() {
             attrs: {
               type: "text",
               placeholder: "Please, write your message!",
-              disabled: _vm.block
+              disabled: _vm.session.block == true
             },
             domProps: { value: _vm.message },
             on: {
@@ -58989,9 +59070,11 @@ var render = function() {
             }
           }),
           _vm._v(" "),
-          _c("button", { attrs: { type: "submit", disabled: _vm.block } }, [
-            _vm._v("Send")
-          ])
+          _c(
+            "button",
+            { attrs: { type: "submit", disabled: _vm.session.block == true } },
+            [_vm._v("Send")]
+          )
         ])
       ]
     )

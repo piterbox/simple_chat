@@ -42,7 +42,7 @@
             this.getFriends();
             Echo.channel('Chat')
             .listen('SessionEvent', (e) => {
-                let friend = this.friends.find(friend => friend.id == e.session_by.id);
+                let friend = this.friends.find(friend => friend.id == e.session_by);
                 friend.session = e.session;
                 this.listenEverySession(friend);
             });
